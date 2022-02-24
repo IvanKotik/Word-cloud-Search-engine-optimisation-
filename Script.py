@@ -75,8 +75,9 @@ def converter_pdf_json_count(pdf_address, file_name=""):
 
     # exporting the JSON file
     if file_name == '':
-        print(df_dictionary_filtered.to_json(orient='records'))
+        return df_dictionary_filtered.to_json(orient='records')
     else:
         df_dictionary_filtered.to_json(file_name, orient='records')
+        return None
 
 #converter_pdf_json_count("/Users/wkhaerdle/Documents/Quantlets/NLP/testpdf3.pdf", "/Users/wkhaerdle/Documents/Quantlets/NLP/testjson3.json", output="file")
