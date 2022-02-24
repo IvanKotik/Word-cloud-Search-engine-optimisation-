@@ -9,7 +9,7 @@ parser.add_argument('-f', '--filename', help='The name of the file you want the 
 args = parser.parse_args()
 
 if args.output == 'console':
-    Script.converter_pdf_json_count(args.path, file_name="")
+    print(Script.converter_pdf_json_count(args.path, file_name=""))
 elif args.output == 'file':
     if args.filename == None or args.filename == "":
         raise parser.error('--path argument is required when output type is file')
