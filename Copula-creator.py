@@ -7,7 +7,8 @@ from itertools import permutations
 from itertools import chain
 
 # id_naming
-id_pdf = "id-0001"
+id_num = 1
+id_pdf = "id-{}".format(id_num)
 
 def download_pdf(url, file_name, headers):
     '''Download a PDF file with an URL (Step 1)'''
@@ -50,6 +51,7 @@ def cleaning(file_name):
     pdf_output = [pdf_output[i].lower() for i in range(totalpages)]
     return pdf_output, totalpages
 
+
 def word_lists(file_name):
     '''Creating the base one-word, two-word and three-word lists, the permutation lists for two- and three-word lists (Step 4)'''
     pdf_output, totalpages = cleaning(file_name)
@@ -68,6 +70,7 @@ def word_lists(file_name):
     three_word_permutation_list = [[p for p in permutations(three_word_list[k])][1:] for k in range(len(three_word_list))]
     three_word_permutation_set = set(list(chain(*three_word_permutation_list)))
     return word_list, one_word_list, two_word_list, two_word_permutation_list, two_word_permutation_set, three_word_list, three_word_permutation_list, three_word_permutation_set
+
 
 def occurrance_three_matrix_creator(file_name):
     '''Creating the occurrance matrices for the three-word lists (Step 5)'''
@@ -106,6 +109,7 @@ def occurrance_three_matrix_creator(file_name):
     occurrence_three_matrix = occurrence_three_matrix.set_index('index')
     return occurrence_three_matrix
 
+
 def occurrance_two_matrix_creator(file_name):
     '''Creating the occurrance matrices for the two-word lists (Step 6)'''
     word_list, one_word_list, two_word_list, two_word_permutation_list, two_word_permutation_set, three_word_list, three_word_permutation_list, three_word_permutation_set = word_lists(file_name)
@@ -143,6 +147,7 @@ def occurrance_two_matrix_creator(file_name):
     occurrence_two_matrix = occurrence_two_matrix.set_index('index')
     return occurrence_two_matrix
 
+
 def occurance_one_matrix_creator(file_name):
     '''Creating the occurrance matrix for one-word combinations (Step 7)'''
     word_list, one_word_list, two_word_list, two_word_permutation_list, two_word_permutation_set, three_word_list, three_word_permutation_list, three_word_permutation_set = word_lists(file_name)
@@ -177,6 +182,7 @@ def occurance_one_matrix_creator(file_name):
     occurrence_one_matrix['index'] = range(len(occurrence_one_matrix))
     occurrence_one_matrix = occurrence_one_matrix.set_index('index')
     return occurrence_one_matrix
+
 
 def main_script(file_name):
     word_lists(file_name)
