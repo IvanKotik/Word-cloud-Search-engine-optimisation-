@@ -1,15 +1,15 @@
-import PyPDF2
-import re, time
-import requests
+import PyPDF2, re, time, requests, os
 import pandas as pd
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 ps = PorterStemmer()
 
+# This script downloads the full new combined PDF file
 
-# search terms
-input_initial = 'Pricing and hedging inverse BTC options'
-number_of_urls = 5
+
+# # search terms
+# input_initial = 'Pricing and hedging inverse BTC options'
+# number_of_urls = 5
 
 # fetching all pdfs
 url_text = 'https://raw.githubusercontent.com/IvanKotik/Word-cloud-Search-engine-optimisation-/419447491efef2bb3a21b0459e5bdcd352a39097/combined_pdf_json.json'
@@ -91,6 +91,7 @@ def create_string(file_name, url):
     
     # opening the file
     imported_pdf = open(file_name, 'rb')
+    os.remove(file_name)
     
     # convert PDF to readable file
     transformed_pdf = PyPDF2.PdfFileReader(imported_pdf, strict=False)
@@ -164,100 +165,12 @@ def combined_pdf_creator():
 # if triggered, then it means that the pdf downloading must happen again
 if all([any(o == q_master['id']) for o in [i for i in q_check['id']]]) == False:
     combined_pdf = combined_pdf_creator()
-    combined_pdf_df = pd.DataFrame({'id' : q_check['id'], "text" : combined_pdf})
-    combined_pdf_json = combined_pdf_df.to_json(orient='index')
-    with open("combined_pdf_json.json", "w") as outfile:
-        outfile.write(combined_pdf_json)
+    try:
+        combined_pdf_df = pd.DataFrame({'id' : q_check['id'], "text" : combined_pdf})
+        combined_pdf_json = combined_pdf_df.to_json(orient='index')
+        with open("combined_pdf_json.json", "w") as outfile:
+            outfile.write(combined_pdf_json)
+    except: print('problematic file encountered')
 else: 
     combined_pdf = [combined_pdf[str(i)]['text'] for i in range(len(combined_pdf))]
 
-
-def input_sequence(input_initial): 
-
-    '''Trimming input search terms to be used for the occurrence matrix. The output is a generalized stemmed input form ready for checking and a count of terms for the ngram_range.'''
-
-    # splitting the phrase by pieces
-    input_general = input_initial.split(' ')
-
-    # cleaning stopwords
-    input_general = [i for i in input_general if i not in stopwords_list]
-
-    # count words
-    input_general_count = len(input_general)
-
-    # stem the words
-    input_general = [ps.stem(i) for i in input_general]
-
-    # create the additional variations of the phrase
-    outer_list = []
-    for i in range(0, input_general_count):
-        inner_list = [input_general[j : input_general_count-i+j] for j in range(i+1)]
-        outer_list.append(inner_list)
-
-    return input_general, input_general_count, outer_list
-
-
-def general_occurrence(input_general_count, combined_pdf): 
-
-    '''Creation of the generalized tfidf occurance matrix based on dynamic parameters.'''
-
-    vectorizer_general = TfidfVectorizer(smooth_idf=True, sublinear_tf=True, use_idf=True, lowercase=False, stop_words=stopwords_list, ngram_range=(input_general_count, input_general_count))
-    X_general = vectorizer_general.fit_transform(combined_pdf)
-    xx_general = pd.DataFrame(X_general.toarray(), columns = vectorizer_general.get_feature_names_out())
-    return xx_general
-
-def check_for_general(input_initial, input_general_count, outer_list, combined_pdf, number_of_urls):
-
-    '''Main function.'''
-
-    # initiating a breaker function
-    breaker = 0
-    # creating the occurrence matrix for max length
-    xx_general = general_occurrence(input_general_count, combined_pdf)
-    # creating an empty table for results
-    test_output = xx_general.copy()
-    test_output = test_output.iloc[:,0]*0
-    # first test for full match
-    print('search term: ', outer_list[0][0])
-    test = ' '.join(outer_list[0][0])
-    # if test passed
-    if test in list(xx_general.columns):
-        # create a ranked index
-        ranked_indexes = xx_general[test].sort_values(ascending=False).index
-        ranked_indexes = list(ranked_indexes[0:number_of_urls])
-        # connect back to urls
-        output_url = [q_master['id'][i] for i in ranked_indexes]
-        print('search result: present\n')
-        return output_url
-    # if test failed drill-down
-    else: 
-        print('search result: not present, drill-down\n')
-        for y in range(1, len(outer_list)):
-            # create a new occurance matrix with new ngrams
-            xx_general = general_occurrence(input_general_count-y, combined_pdf)
-            for u in range(y+1):
-                # drill-down phrase test
-                print('search term: ', outer_list[y][u])
-                test = ' '.join(outer_list[y][u])
-                # if test passed
-                if test in list(xx_general.columns):
-                    # sum the tfidf indexes across multiple matches
-                    test_output += xx_general[test]
-                    print('search result: present\n')
-                    # initiate the exit from the function
-                    breaker = 1
-                else: 
-                    print('search result: not present\n')
-            if breaker == 1:
-                # order the indexes by highest tfidf
-                ranked_indexes = test_output.sort_values(ascending=False).index
-                ranked_indexes = list(ranked_indexes[0:number_of_urls])
-                # return urls
-                output_url = [q_master['id'][i] for i in ranked_indexes]
-                return output_url
-
-
-input_general, input_general_count, outer_list = input_sequence(input_initial)
-output_url = check_for_general(input_initial, input_general_count, outer_list, combined_pdf, number_of_urls)
-json_output = pd.DataFrame({'id': output_url}).to_json(orient='index')
-print(json_output)
